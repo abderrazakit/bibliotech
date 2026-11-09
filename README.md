@@ -11,19 +11,30 @@ Java 21 · Jakarta EE 10 · Tomcat 10.1 · PostgreSQL 18 · Maven 3.9 · JSTL 3.
 4. Tester : http://localhost:8081/bibliotech/health
 
 ## Réponses aux questions
-### Q0.1
-La portée provided signifie que la dépendance est nécessaire à la compilation, mais qu’elle sera fournie par l’environnement d’exécution : Maven ne l’inclut donc pas dans le WAR. C’est le cas de jakarta.jakartaee-web-api, car Tomcat 10.1 embarque déjà sa propre implémentation de l’API Servlet/JSP (tomcat/lib/servlet-api.jar, jsp-api.jar, etc.). Notre code a seulement besoin de ces interfaces pour compiler (HttpServlet, @WebServlet…).
 
-Si on la passait en compile, Maven copierait le jar de l’API dans WEB-INF/lib. Les classes jakarta.servlet.* existeraient alors en double : celles du serveur et celles de l’application. Cela rend le WAR plus lourd inutilement et crée un risque de conflit de classloaders : une même classe chargée par deux classloaders différents est considérée comme deux classes distinctes, ce qui peut provoquer des ClassCastException ou des LinkageError, notamment si les versions diffèrent. Tomcat limite ce risque en refusant de charger lui-même les classes jakarta.servlet.* présentes dans l’application, mais embarquer une API déjà fournie par le serveur reste une mauvaise pratique.
+### Q0.1 — Pourquoi `provided` ?
+Tomcat contient déjà l'API Servlet. On en a besoin pour compiler, mais pas dans le WAR : `provided` dit justement à Maven de ne pas l'y mettre.
+En `compile`, le jar serait copié dans le WAR. Les mêmes classes existeraient alors deux fois (dans Tomcat et dans l'application), ce qui alourdit le WAR et peut créer des conflits.
 
-### Q0.2
+### Q0.2 — Pourquoi ne pas mettre les identifiants dans le code ?
+Git garde tout l'historique : un mot de passe poussé une fois reste visible pour toujours, et n'importe qui peut le lire sur un dépôt public.
+Deux autres solutions pour les sortir du code :
+- une **DataSource JNDI** déclarée dans le `context.xml` de Tomcat ;
+- un **fichier de configuration** (ex. `db.properties`) exclu de Git par le `.gitignore`.
 
-Un dépôt Git conserve tout l’historique : même si le mot de passe est supprimé dans un commit ultérieur, il reste lisible dans les anciens commits (git log -p) et dans tous les clones déjà faits. Sur un dépôt public, des robots parcourent GitHub en permanence pour récupérer automatiquement les secrets publiés. De plus, coder le mot de passe en dur lie le code à un environnement : il faudrait recompiler pour passer du poste de développement au serveur de production, et tous les développeurs partageraient le même secret. Enfin, changer un mot de passe compromis imposerait de modifier le code et de redéployer.
+### QA.1 — Pourquoi un Record est-il immuable ?
+Ses champs sont `final` et il n'a pas de setters : une fois créé, on ne peut plus le modifier.
+Dans Tomcat, une seule instance de Servlet sert plusieurs requêtes en même temps. Un objet qui ne peut pas changer peut être partagé entre ces threads sans risque, sans avoir besoin de synchronisation.
 
-Deux moyens d’externaliser (hors variables d’environnement) :
+### QA.2 — Sealed interface ou interface classique ?
+Une interface classique peut être implémentée par n'importe quelle classe. Une interface `sealed` donne la liste exacte des classes autorisées (`permits`), et le compilateur refuse les autres.
+Avantage : dans un `switch`, le compilateur connaît tous les cas possibles. Il vérifie qu'on n'en oublie aucun, et on n'a plus besoin de `default`.
 
-1.	Une DataSource JNDI déclarée dans le serveur : les paramètres de connexion sont décrits dans le context.xml de Tomcat (balise <Resource>), en dehors du WAR. L’application la récupère par son nom (java:comp/env/jdbc/bibliotech). Ce mécanisme apporte aussi un pool de connexions.
-	
-2.	Un fichier de configuration externe non versionné (par exemple db.properties), placé hors du projet ou exclu par .gitignore, avec un fichier d’exemple db.properties.example sans secret dans le dépôt.
-	
-On peut aussi citer, en entreprise, un gestionnaire de secrets (HashiCorp Vault, AWS Secrets Manager, Azure Key Vault), qui fournit les identifiants à l’exécution, gère leur rotation et trace les accès.
+### QA.3 — Exhaustivité du switch et ajout de `Perdu`
+Comme l'interface est `sealed`, le compilateur sait qu'un statut ne peut être que `EnCours`, `Rendu` ou `EnRetard`. Si les trois sont traités, le `switch` est complet : pas besoin de `default`.
+Si on ajoutait `Perdu`, le `switch` ne serait plus complet et le code ne compilerait plus. Le compilateur nous obligerait à gérer ce nouveau cas, au lieu de laisser passer un bug silencieux.
+
+## Choix techniques
+- **`Rendu` a un champ `joursDeRetard` en plus** : le record du sujet ne stockait pas le nombre de jours, ce qui empêchait de calculer la pénalité de 0,50 €/jour.
+- **Utilisateur PostgreSQL dédié `bibliotech_app`** : l'application n'utilise pas le super-utilisateur `postgres`.
+- **Tomcat sur le port 8081** : le port 8080 était déjà pris par un autre service (`httpd.exe`).
