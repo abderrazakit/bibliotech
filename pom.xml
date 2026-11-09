@@ -21,11 +21,20 @@
       <version>10.0.0</version>
       <scope>provided</scope>
     </dependency>
-      <!-- Driver JDBC PostgreSQL -->
+
+    <!-- Driver JDBC PostgreSQL : embarqué dans le WAR -->
     <dependency>
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
       <version>42.7.4</version>
+    </dependency>
+
+    <!-- Tests unitaires : uniquement pour les tests, jamais dans le WAR -->
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>5.11.3</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 
@@ -41,11 +50,19 @@
           <release>21</release>
         </configuration>
       </plugin>
+
       <!-- Production du fichier .war -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-war-plugin</artifactId>
         <version>3.4.0</version>
+      </plugin>
+
+      <!-- Exécution des tests JUnit 5 avec "mvn test" -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>3.5.2</version>
       </plugin>
     </plugins>
   </build>
