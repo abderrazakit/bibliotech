@@ -1,0 +1,13 @@
+<%@ page pageEncoding="UTF-8" %>
+<header class="entete">
+    <div class="conteneur">
+        <a class="logo" href="<c:url value='/livres'/>">
+            <span class="logo-dos" aria-hidden="true"><span></span><span></span><span></span></span>
+            BiblioTech
+        </a>
+        <nav class="menu" aria-label="Navigation principale">
+            <a href="<c:url value='/livres'/>" ${pageActive == 'catalogue' ? 'aria-current="page"' : ''}>Catalogue</a>
+            <a href="<c:url value='/emprunts'/>" ${pageActive == 'emprunts' ? 'aria-current="page"' : ''}>Emprunts en cours</a>
+        </nav>
+    </div>
+</header>

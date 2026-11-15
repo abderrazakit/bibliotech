@@ -1,58 +1,52 @@
 <%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib uri="jakarta.tags.core" prefix="c" %>
+<c:set var="pageActive" value="catalogue"/>
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <title>BiblioTech — <c:out value="${livre.titre()}"/></title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 2rem; color: #222; }
-        dl   { display: grid; grid-template-columns: max-content auto; gap: .5rem 1.5rem; }
-        dt   { font-weight: bold; }
-        .ok  { color: #15803d; font-weight: bold; }
-        .ko  { color: #b91c1c; font-weight: bold; }
-        .btn { display: inline-block; padding: .4rem .8rem; background: #2563eb; color: #fff;
-               text-decoration: none; border-radius: 4px; }
-        form.inline { display: inline; }
-    </style>
+    <title><c:out value="${livre.titre()}"/> — BiblioTech</title>
+    <%@ include file="/WEB-INF/jspf/tete.jspf" %>
 </head>
 <body>
+<%@ include file="/WEB-INF/jspf/entete.jspf" %>
 
-<p><a href="<c:url value='/livres'/>">← Retour au catalogue</a></p>
+<main class="conteneur">
+    <a class="retour" href="<c:url value='/livres'/>">Retour au catalogue</a>
 
-<h1><c:out value="${livre.titre()}"/></h1>
+    <article class="fiche">
+        <h1><c:out value="${livre.titre()}"/></h1>
 
-<dl>
-    <dt>Auteur</dt>
-    <dd><c:out value="${livre.auteur()}"/></dd>
+        <dl>
+            <dt>Auteur</dt>
+            <dd><c:out value="${livre.auteur()}"/></dd>
 
-    <dt>Année de publication</dt>
-    <dd><c:out value="${livre.anneePublication()}"/></dd>
+            <dt>Année de publication</dt>
+            <dd><c:out value="${livre.anneePublication()}"/></dd>
 
-    <dt>Exemplaires</dt>
-    <dd><c:out value="${livre.exemplairesDisponibles()}"/> disponible(s) sur <c:out value="${livre.exemplairesTotal()}"/></dd>
+            <dt>Exemplaires</dt>
+            <dd><c:out value="${livre.exemplairesDisponibles()}"/> disponible(s) sur <c:out value="${livre.exemplairesTotal()}"/></dd>
 
-    <dt>Statut</dt>
-    <dd>
-        <c:choose>
-            <c:when test="${livre.exemplairesDisponibles() > 0}">
-                <span class="ok">Disponible à l'emprunt</span>
-            </c:when>
-            <c:otherwise>
-                <span class="ko">Tous les exemplaires sont empruntés</span>
-            </c:otherwise>
-        </c:choose>
-    </dd>
-</dl>
+            <dt>Statut</dt>
+            <dd>
+                <c:choose>
+                    <c:when test="${livre.exemplairesDisponibles() > 0}">
+                        <span class="pastille ok">Disponible à l'emprunt</span>
+                    </c:when>
+                    <c:otherwise>
+                        <span class="pastille vide">Tous les exemplaires sont empruntés</span>
+                    </c:otherwise>
+                </c:choose>
+            </dd>
+        </dl>
 
-<div>
-    <a class="btn" href="<c:url value='/livres/${livre.id()}/edit'/>">Modifier</a>
-    <form class="inline" method="post"
-          action="<c:url value='/livres/${livre.id()}/delete'/>"
-          onsubmit="return confirm('Supprimer ce livre ?');">
-        <button type="submit">Supprimer</button>
-    </form>
-</div>
-
+        <div class="barre-actions">
+            <a class="btn" href="<c:url value='/livres/${livre.id()}/edit'/>">Modifier</a>
+            <form method="post" action="<c:url value='/livres/${livre.id()}/delete'/>"
+                  onsubmit="return confirm('Supprimer ce livre ?');">
+                <button type="submit" class="lien-danger">Supprimer ce livre</button>
+            </form>
+        </div>
+    </article>
+</main>
 </body>
 </html>

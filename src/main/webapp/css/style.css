@@ -1,0 +1,203 @@
+/* =====================================================================
+   BiblioTech — feuille de style unique (src/main/webapp/css/style.css)
+   Palette « bibliothèque » : papier crème, sarcelle, ocre, bois de noyer
+   ===================================================================== */
+
+:root {
+    --creme:      #FBF6E9;   /* fond de page (papier) */
+    --papier:     #FFFDF7;   /* surfaces : tableaux, formulaires */
+    --sarcelle:   #2E6B6B;   /* titres, liens */
+    --ocre:       #A85F0F;   /* action principale */
+    --ocre-clair: #F3DDB6;
+    --noyer:      #4A2E1F;   /* texte */
+    --noyer-doux: #8A6A55;   /* texte secondaire */
+    --bois:       #6B4430;   /* étagère */
+    --rose:       #A63A55;   /* erreurs, retards */
+    --rose-clair: #F9E1E5;
+    --vert:       #1F5A4E;
+    --vert-clair: #DCEFE6;
+    --trait:      #E8DCC4;   /* bordures */
+
+    --titre: "Outfit", "Segoe UI", system-ui, sans-serif;
+    --texte: "Literata", Georgia, "Times New Roman", serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    background: var(--creme);
+    color: var(--noyer);
+    font-family: var(--texte);
+    font-size: 1.0625rem;
+    line-height: 1.6;
+}
+
+a { color: var(--sarcelle); text-underline-offset: .2em; }
+a:hover { color: var(--noyer); }
+
+:focus-visible {
+    outline: 3px solid var(--ocre);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+h1, h2, h3 {
+    font-family: var(--titre);
+    color: var(--sarcelle);
+    line-height: 1.15;
+    margin: 0 0 .5em;
+}
+h1 { font-weight: 300; font-size: clamp(2.2rem, 4vw, 3.25rem); letter-spacing: -.01em; }
+h2 { font-weight: 400; font-size: 1.6rem; }
+
+.conteneur { width: min(1120px, 100% - 3rem); margin-inline: auto; }
+
+/* ---------- En-tête ---------- */
+.entete { border-bottom: 1px solid var(--trait); }
+.entete .conteneur {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 1rem; padding-block: 1rem;
+}
+.logo {
+    display: inline-flex; align-items: center; gap: .6rem;
+    font-family: var(--titre); font-weight: 500; font-size: 1.35rem;
+    color: var(--noyer); text-decoration: none;
+}
+.logo-dos { display: inline-flex; align-items: flex-end; gap: 2px; height: 26px; }
+.logo-dos span { width: 6px; border-radius: 1px; }
+.logo-dos span:nth-child(1) { height: 22px; background: var(--sarcelle); }
+.logo-dos span:nth-child(2) { height: 26px; background: #E0A930; }
+.logo-dos span:nth-child(3) { height: 18px; background: #C9566E; }
+
+.menu { display: flex; gap: .25rem; }
+.menu a {
+    font-family: var(--titre); font-size: 1rem; text-decoration: none;
+    color: var(--noyer-doux); padding: .45rem .9rem; border-radius: 999px;
+}
+.menu a:hover { color: var(--noyer); background: var(--ocre-clair); }
+.menu a[aria-current="page"] { color: var(--papier); background: var(--sarcelle); }
+
+main { padding-block: 2.5rem 4rem; }
+
+/* ---------- Bandeau d'accueil du catalogue (l'élément marquant) ---------- */
+.accueil {
+    display: grid; grid-template-columns: 1fr 1.1fr;
+    align-items: center; gap: 2.5rem;
+    margin-bottom: 2.5rem;
+}
+.accueil p { max-width: 34ch; color: var(--noyer-doux); margin: 0 0 1.5rem; }
+.accueil .appel { margin: 1.5rem 0 0; }
+.etagere {
+    width: 100%; aspect-ratio: 16 / 9;
+    border-radius: 0 28px 28px 0;
+    background: url("../img/etagere.svg") center / cover no-repeat;
+}
+
+/* ---------- Boutons ---------- */
+.btn {
+    display: inline-block; cursor: pointer;
+    font-family: var(--titre); font-size: 1rem; font-weight: 500;
+    padding: .7rem 1.5rem; border-radius: 999px;
+    border: 2px solid var(--ocre);
+    background: var(--ocre); color: #fff; text-decoration: none;
+}
+.btn:hover { background: #8C4E0B; border-color: #8C4E0B; color: #fff; }
+.btn-discret { background: transparent; color: var(--ocre); }
+.btn-discret:hover { background: var(--ocre-clair); color: var(--noyer); }
+.btn-petit { padding: .35rem .95rem; font-size: .9rem; }
+.lien-danger {
+    font: inherit; font-size: .95rem; cursor: pointer;
+    background: none; border: none; padding: 0;
+    color: var(--rose); text-decoration: underline; text-underline-offset: .2em;
+}
+
+/* ---------- Recherche ---------- */
+.recherche { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; }
+.recherche input { flex: 1 1 14rem; max-width: 22rem; }
+.resultats { color: var(--noyer-doux); margin: 0 0 1rem; }
+
+/* ---------- Champs ---------- */
+input[type="text"], select {
+    font: inherit; color: var(--noyer);
+    background: var(--papier);
+    border: 1.5px solid var(--trait); border-radius: 10px;
+    padding: .6rem .8rem; width: 100%;
+}
+input[type="text"]:focus, select:focus { border-color: var(--sarcelle); outline: none; box-shadow: 0 0 0 3px #2E6B6B33; }
+
+/* ---------- Tableau ---------- */
+.compteur { font-family: var(--titre); color: var(--noyer-doux); margin: 0 0 .75rem; }
+.table-cadre { overflow-x: auto; border: 1px solid var(--trait); border-radius: 18px; background: var(--papier); }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: .85rem 1.1rem; text-align: left; vertical-align: middle; }
+th {
+    font-family: var(--titre); font-weight: 500; font-size: .95rem;
+    color: var(--noyer-doux); background: #F6EDDA;
+    border-bottom: 1px solid var(--trait);
+}
+tbody tr + tr td { border-top: 1px solid #F1E7D3; }
+td.titre { font-weight: 600; }
+td.actions { white-space: nowrap; }
+td.actions a, td.actions form { margin-right: .9rem; }
+tr.retard td { background: var(--rose-clair); }
+tr.retard td:first-child { box-shadow: inset 4px 0 0 var(--rose); }
+
+/* Pastilles de disponibilité / statut */
+.pastille {
+    display: inline-block; white-space: nowrap;
+    font-family: var(--titre); font-size: .9rem;
+    padding: .15rem .7rem; border-radius: 999px;
+}
+.pastille.ok   { background: var(--vert-clair); color: var(--vert); }
+.pastille.vide { background: var(--rose-clair); color: var(--rose); }
+
+/* ---------- Messages ---------- */
+.message { padding: .85rem 1.1rem; border-radius: 12px; margin: 0 0 1.5rem; }
+.message.succes { background: var(--vert-clair); color: var(--vert); }
+.message.erreur { background: var(--rose-clair); color: var(--rose); }
+
+.vide-etat { padding: 2rem; text-align: center; color: var(--noyer-doux); }
+
+/* ---------- Fiches et formulaires ---------- */
+.retour { display: inline-block; margin-bottom: 1.5rem; font-family: var(--titre); }
+.fiche, .formulaire {
+    max-width: 44rem; background: var(--papier);
+    border: 1px solid var(--trait); border-radius: 22px;
+    padding: 2rem 2.25rem;
+}
+.fiche dl { display: grid; grid-template-columns: max-content 1fr; gap: .6rem 2rem; margin: 1.5rem 0 2rem; }
+.fiche dt { font-family: var(--titre); color: var(--noyer-doux); }
+.fiche dd { margin: 0; }
+.barre-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 1.25rem; }
+
+.champ { margin-bottom: 1.25rem; }
+.champ label { display: block; font-family: var(--titre); font-weight: 500; margin-bottom: .35rem; }
+.champ-invalide { border-color: var(--rose) !important; background: #FFF8F9 !important; }
+.erreur-champ { display: block; color: var(--rose); font-size: .95rem; margin-top: .3rem; }
+.grille-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1.25rem; }
+
+/* ---------- Emprunts ---------- */
+.emprunt-nouveau {
+    display: grid; grid-template-columns: 1fr 1fr auto; align-items: end; gap: 1rem;
+    background: var(--papier); border: 1px solid var(--trait); border-radius: 18px;
+    padding: 1.25rem 1.5rem; margin-bottom: 2rem;
+}
+.emprunt-nouveau .champ { margin: 0; }
+.emprunt-nouveau .aide { grid-column: 1 / -1; margin: 0; font-size: .95rem; color: var(--noyer-doux); }
+
+/* Texte réservé aux lecteurs d'écran */
+.sr {
+    position: absolute; width: 1px; height: 1px; overflow: hidden;
+    clip: rect(0 0 0 0); white-space: nowrap;
+}
+.intro { color: var(--noyer-doux); max-width: 60ch; margin: 0 0 2rem; }
+
+/* ---------- Petits écrans ---------- */
+@media (max-width: 760px) {
+    .accueil { grid-template-columns: 1fr; }
+    .etagere { order: -1; border-radius: 0 20px 20px 0; }
+    .grille-2, .emprunt-nouveau { grid-template-columns: 1fr; }
+    .fiche, .formulaire { padding: 1.5rem; }
+    .entete .conteneur { flex-wrap: wrap; }
+}
