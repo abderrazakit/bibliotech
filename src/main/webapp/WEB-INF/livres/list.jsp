@@ -17,6 +17,10 @@
     </style>
 </head>
 <body>
+<nav>
+    <a href="<c:url value='/livres'/>"><strong>Catalogue</strong></a>
+    <a href="<c:url value='/emprunts'/>">Emprunts en cours</a>
+</nav>
 
 <h1>BiblioTech - Catalogue</h1>
 

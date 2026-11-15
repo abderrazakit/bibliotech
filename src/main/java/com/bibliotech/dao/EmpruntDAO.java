@@ -55,6 +55,16 @@ public class EmpruntDAO implements GenericDAO<Emprunt, Long> {
     private static final String SQL_DECREMENTER_DISPONIBLES =
             "UPDATE livre SET exemplaires_disponibles = exemplaires_disponibles - 1 WHERE id = ?";
 
+    // --- Requêtes de la transaction "retour" ---
+    private static final String SQL_LIRE_EMPRUNT_POUR_RETOUR =
+            "SELECT livre_id, date_retour_effective FROM emprunt WHERE id = ? FOR UPDATE";
+
+    private static final String SQL_MARQUER_RENDU =
+            "UPDATE emprunt SET date_retour_effective = ?, statut = 'RENDU' WHERE id = ?";
+
+    private static final String SQL_INCREMENTER_DISPONIBLES =
+            "UPDATE livre SET exemplaires_disponibles = exemplaires_disponibles + 1 WHERE id = ?";
+
     // ======================= CRUD (GenericDAO) =======================
 
     @Override
@@ -121,7 +131,7 @@ public class EmpruntDAO implements GenericDAO<Emprunt, Long> {
         return lister(SQL_FIND_EN_COURS, "Impossible de lister les emprunts en cours");
     }
 
-    // ======================= TRANSACTION (C.3) =======================
+    // ======================= TRANSACTION "EMPRUNTER" (C.3) =======================
 
     /**
      * Enregistre un emprunt dans UNE SEULE transaction :
@@ -181,6 +191,61 @@ public class EmpruntDAO implements GenericDAO<Emprunt, Long> {
             }
         } catch (SQLException e) {
             throw new DAOException("Impossible d'enregistrer l'emprunt du livre " + livreId, e);
+        }
+    }
+
+    // ======================= TRANSACTION "RETOUR" =======================
+
+    /**
+     * Enregistre le retour d'un emprunt dans UNE SEULE transaction :
+     *  1. vérifie que l'emprunt existe et n'est pas déjà rendu (ligne verrouillée),
+     *  2. renseigne la date de retour effective (statut RENDU),
+     *  3. remet l'exemplaire en stock (+1).
+     *
+     * @throws IllegalArgumentException si l'emprunt n'existe pas
+     * @throws IllegalStateException    si l'emprunt a déjà été rendu
+     * @throws DAOException             en cas d'erreur SQL
+     */
+    public void enregistrerRetour(long empruntId) {
+        try (Connection c = DatabaseConnection.get()) {
+            c.setAutoCommit(false);                       // ===== DÉBUT DE LA TRANSACTION =====
+            try {
+                // Étape 1 : lecture + verrouillage de la ligne (évite un double retour simultané)
+                long livreId;
+                try (PreparedStatement ps = c.prepareStatement(SQL_LIRE_EMPRUNT_POUR_RETOUR)) {
+                    ps.setLong(1, empruntId);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (!rs.next()) {
+                            throw new IllegalArgumentException("L'emprunt " + empruntId + " n'existe pas.");
+                        }
+                        if (rs.getObject("date_retour_effective", LocalDate.class) != null) {
+                            throw new IllegalStateException("Cet emprunt a déjà été rendu.");
+                        }
+                        livreId = rs.getLong("livre_id");
+                    }
+                }
+
+                // Étape 2 : l'emprunt est rendu aujourd'hui
+                try (PreparedStatement ps = c.prepareStatement(SQL_MARQUER_RENDU)) {
+                    ps.setObject(1, LocalDate.now());
+                    ps.setLong(2, empruntId);
+                    ps.executeUpdate();
+                }
+
+                // Étape 3 : l'exemplaire revient en stock
+                try (PreparedStatement ps = c.prepareStatement(SQL_INCREMENTER_DISPONIBLES)) {
+                    ps.setLong(1, livreId);
+                    ps.executeUpdate();
+                }
+
+                c.commit();                               // ===== VALIDATION : tout ou rien =====
+
+            } catch (SQLException | RuntimeException e) {
+                c.rollback();                             // ===== ANNULATION de TOUTES les étapes =====
+                throw e;
+            }
+        } catch (SQLException e) {
+            throw new DAOException("Impossible d'enregistrer le retour de l'emprunt " + empruntId, e);
         }
     }
 
