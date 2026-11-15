@@ -3,6 +3,8 @@
 Application web de gestion de bibliothèque universitaire : catalogue de livres (CRUD),
 emprunts, retours, retards et pénalités.
 
+📄 [Compte rendu du TP (PDF)](docs/Compte_rendu_TP01_BiblioTech_HAJJI.pdf)
+
 ## Stack technique
 
 | Brique | Version |
@@ -173,4 +175,3 @@ Je n'ai pas retenu la contrainte `CHECK (exemplaires_disponibles >= 0)` seule : 
 **Réflexion** : toutes les autres vues (liste, détail, formulaire avec ses attributs `value`, emprunts, messages) utilisaient déjà `<c:out>` ; un titre de livre piégé (XSS stocké) s'affiche donc comme du texte. Les seules expressions EL non échappées contiennent des valeurs fixées par le serveur (classes CSS, id numériques).
 
 
-📄 [Compte rendu du TP (PDF)](docs/Compte_rendu_TP01_BiblioTech_HAJJI.pdf)
