@@ -54,3 +54,19 @@ Exemple avec le titre `<script>alert('XSS')</script>` :
 L'utilisateur ajoute un livre : le serveur fait l'INSERT puis un forward vers la liste, et l'URL reste celle du POST.
 S'il appuie sur F5 (ou revient en arrière puis en avant), le navigateur propose de renvoyer le formulaire.
 S'il accepte, le même POST repart, un second INSERT est fait, et le livre apparaît **en double** dans le catalogue.
+
+### QC.1 : Pourquoi créer `GenericDAO<T, ID>` dès le premier DAO ?
+1. **On peut changer l'implémentation sans toucher au reste.** La servlet ne connaît que l'interface : on est passé de `LivreDAOMemoire` (partie B) à `LivreDAO` (JDBC) en modifiant une seule ligne.
+2. **Tous les DAO ont la même forme.** `LivreDAO` et `EmpruntDAO` offrent les mêmes méthodes (`findAll`, `findById`, `save`, `update`, `delete`) : le code est plus lisible, et on écrit une seule fois un code qui marche pour tous les DAO.
+Bonus : on peut tester une servlet avec un faux DAO en mémoire, sans base de données.
+
+### QC.2 : Pourquoi `PreparedStatement` plutôt que `Statement` ?
+1. **Sécurité : il bloque l'injection SQL.** Les valeurs sont envoyées à part, avec des `?`. Elles ne sont jamais lues comme du code SQL.
+   Avec `Statement` et une concaténation, un titre comme `' OR '1'='1` ou `'; DROP TABLE livre; --` changerait le sens de la requête.
+2. **Performance : la requête est préparée une seule fois.** La base peut réutiliser son plan d'exécution quand on relance la même requête avec d'autres valeurs.
+En plus, le driver gère lui-même les types et les caractères spéciaux (dates, apostrophes comme dans « L'Étranger »…).
+
+### QC.3 : Que se passe-t-il sans `setAutoCommit(false)` ?
+Sans cette ligne, JDBC valide chaque requête **dès qu'elle est exécutée**.
+Si une erreur arrive entre l'UPDATE et l'INSERT : l'UPDATE est déjà enregistré (le livre a **un exemplaire disponible en moins**), mais l'INSERT n'a pas eu lieu (**aucun emprunt** n'est créé).
+La base est alors **incohérente** : un exemplaire a « disparu » sans que personne ne l'ait emprunté, et le `rollback()` ne peut rien annuler, puisque tout est déjà validé.
