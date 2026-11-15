@@ -1,14 +1,105 @@
-# BiblioTech - TP01 Jakarta EE
+# BiblioTech : TP01 Jakarta EE
 
-## Stack
-Java 21 · Jakarta EE 10 · Tomcat 10.1 · PostgreSQL 18 · Maven 3.9 · JSTL 3.0
+Application web de gestion de bibliothèque universitaire : catalogue de livres (CRUD),
+emprunts, retours, retards et pénalités.
+
+## Stack technique
+
+| Brique | Version |
+|---|---|
+| Java | 21 (Temurin) |
+| Jakarta EE | 10 (Servlet 6.0, JSP, JSTL 3.0) |
+| Tomcat | 10.1.60 |
+| PostgreSQL | 18.6 |
+| Maven | 3.9.16 |
+| Tests | JUnit 5 |
+
+## Structure du projet
+
+```
+bibliotech/
+├── pom.xml
+├── sql/schema.sql                         # tables + données de démo
+├── docs/captures/                         # captures d'écran exigées
+└── src/
+    ├── main/java/com/bibliotech/
+    │   ├── model/   Livre, Etudiant, Emprunt (records), StatutEmprunt (sealed),
+    │   │            PenaliteCalculator, ValidationException, LivreIndisponibleException
+    │   ├── dao/     GenericDAO, LivreDAO, EmpruntDAO, EtudiantDAO,
+    │   │            DatabaseConnection, DAOException
+    │   └── web/     HealthServlet, LivreServlet, EmpruntServlet, LigneEmprunt
+    ├── main/webapp/WEB-INF/
+    │   ├── web.xml
+    │   ├── livres/   list.jsp, detail.jsp, form.jsp
+    │   └── emprunts/ list.jsp
+    └── test/java/com/bibliotech/
+        ├── model/   ModelValidationTest, PenaliteCalculatorTest
+        └── dao/     EmpruntDAOTest, EnregistrerEmpruntTest, RaceConditionTest
+```
+
+Architecture MVC : les **servlets** (contrôleurs) appellent les **DAO** (accès aux données)
+et transmettent les **records** (modèle) aux **JSP** (vues, JSTL uniquement, zéro scriptlet).
 
 ## Lancer le projet
-1. Créer la base `bibliotech` et le rôle `bibliotech_app` dans PostgreSQL.
-2. Définir les variables d'environnement `DB_URL`, `DB_USER`, `DB_PASSWORD`
-   (ex. `DB_URL=jdbc:postgresql://localhost:5432/bibliotech`).
-3. `mvn clean package` puis déployer `target/bibliotech.war` sur Tomcat 10.1.
-4. Tester : http://localhost:8081/bibliotech/health
+
+### 1. Base de données
+```sql
+-- En tant que postgres :
+CREATE ROLE bibliotech_app WITH LOGIN PASSWORD '<mot_de_passe>';
+CREATE DATABASE bibliotech OWNER bibliotech_app;
+```
+Puis, sur la base `bibliotech`, exécuter `sql/schema.sql` précédé de `SET ROLE bibliotech_app;`.
+
+(Alternative Docker proposée par le sujet :
+`docker run --name pg-bibliotech -e POSTGRES_PASSWORD=secret -p 5432:5432 -d postgres:16`)
+
+### 2. Variables d'environnement (jamais dans le code)
+```
+DB_URL=jdbc:postgresql://localhost:5432/bibliotech
+DB_USER=bibliotech_app
+DB_PASSWORD=<mot_de_passe>
+```
+À définir pour Tomcat (configuration de lancement) et pour les tests.
+
+### 3. Build et déploiement
+```
+mvn clean package        # compile, lance les 33 tests, produit target/bibliotech.war
+```
+Déployer `target/bibliotech.war` sur Tomcat 10.1.
+
+> Tomcat est configuré sur le port **8081** (le port 8080 est occupé par un autre service sur ma machine).
+
+### 4. Accès à l'application
+
+Une fois Tomcat démarré (port **8081**) :
+
+| Page | Adresse | Ce qu'on y fait |
+|---|---|---|
+| Catalogue | [localhost:8081/bibliotech/livres](http://localhost:8081/bibliotech/livres) | Consulter, rechercher, ajouter, modifier et supprimer des livres |
+| Emprunts en cours | [localhost:8081/bibliotech/emprunts](http://localhost:8081/bibliotech/emprunts) | Enregistrer un emprunt ou un retour, voir les retards et les pénalités |
+| État du service | [localhost:8081/bibliotech/health](http://localhost:8081/bibliotech/health) | Vérifier que l'application et la base répondent (`OK` + version de PostgreSQL, ou `KO` en erreur 500) |
+
+## Captures d'écran
+### Catalogue
+![Catalogue des livres](docs/captures/01-catalogue.jpeg)
+
+### Formulaire d'ajout d'un livre
+![Formulaire d'ajout](docs/captures/02-formulaire-ajout.jpeg)
+
+### Emprunts en cours
+![Emprunts en cours](docs/captures/03-emprunts-en-cours.jpeg)
+
+## Choix techniques
+- **`Rendu` a un champ `joursDeRetard`** : nécessaire pour appliquer la pénalité de 0,50 €/jour.
+- **Validation complète** : le record `Livre` collecte toutes les erreurs (`ValidationException`, qui hérite de `IllegalArgumentException`), affichées sous chaque champ.
+- **Statut « en retard » calculé** à partir des dates, et non stocké en base.
+- **Rôle PostgreSQL dédié** `bibliotech_app` (moindre privilège) et contraintes `CHECK` en base.
+- **Sécurité** : `PreparedStatement` partout, `<c:out>` partout, cookie de session `HttpOnly` et transmis uniquement par cookie.
+
+## Choix techniques
+- **`Rendu` a un champ `joursDeRetard` en plus** : le record du sujet ne stockait pas le nombre de jours, ce qui empêchait de calculer la pénalité de 0,50 €/jour.
+- **Utilisateur PostgreSQL dédié `bibliotech_app`** : l'application n'utilise pas le super-utilisateur `postgres`.
+- **Tomcat sur le port 8081** : le port 8080 était déjà pris par un autre service (`httpd.exe`).
 
 ## Réponses aux questions
 
@@ -33,11 +124,6 @@ Avantage : dans un `switch`, le compilateur connaît tous les cas possibles. Il 
 ### QA.3 : Exhaustivité du switch et ajout de `Perdu`
 Comme l'interface est `sealed`, le compilateur sait qu'un statut ne peut être que `EnCours`, `Rendu` ou `EnRetard`. Si les trois sont traités, le `switch` est complet : pas besoin de `default`.
 Si on ajoutait `Perdu`, le `switch` ne serait plus complet et le code ne compilerait plus. Le compilateur nous obligerait à gérer ce nouveau cas, au lieu de laisser passer un bug silencieux.
-
-## Choix techniques
-- **`Rendu` a un champ `joursDeRetard` en plus** : le record du sujet ne stockait pas le nombre de jours, ce qui empêchait de calculer la pénalité de 0,50 €/jour.
-- **Utilisateur PostgreSQL dédié `bibliotech_app`** : l'application n'utilise pas le super-utilisateur `postgres`.
-- **Tomcat sur le port 8081** : le port 8080 était déjà pris par un autre service (`httpd.exe`).
 
 ### QB.1 : Pourquoi un formulaire HTML ne fait que GET et POST ?
 La norme HTML n'autorise que `get` et `post` dans l'attribut `method` d'un formulaire. Les formulaires ont été conçus pour deux usages : **lire** une page (GET) et **envoyer** des données (POST).
@@ -70,3 +156,19 @@ En plus, le driver gère lui-même les types et les caractères spéciaux (dates
 Sans cette ligne, JDBC valide chaque requête **dès qu'elle est exécutée**.
 Si une erreur arrive entre l'UPDATE et l'INSERT : l'UPDATE est déjà enregistré (le livre a **un exemplaire disponible en moins**), mais l'INSERT n'a pas eu lieu (**aucun emprunt** n'est créé).
 La base est alors **incohérente** : un exemplaire a « disparu » sans que personne ne l'ait emprunté, et le `rollback()` ne peut rien annuler, puisque tout est déjà validé.
+
+## Bonus 1 : Race condition sur le dernier exemplaire
+
+**Reproduction** : `RaceConditionTest` lance deux threads (`ExecutorService` + `CountDownLatch`) qui empruntent en même temps le dernier exemplaire. Sans correction : **2 emprunts réussis, stock à -1**.
+
+**Diagnostic** : en READ COMMITTED (niveau par défaut de PostgreSQL), le `SELECT` ne pose aucun verrou. Les deux transactions lisent « 1 disponible » avant que l'une d'elles ait validé, et passent toutes les deux la vérification. Le second `UPDATE` attend le premier, puis décrémente à partir de 0 : on obtient -1. La décision est prise sur une lecture devenue périmée (schéma « vérifier puis agir »).
+
+**Correction** : `SELECT … FOR UPDATE`. La ligne du livre est verrouillée jusqu'au commit, le second emprunteur attend puis lit 0, et il reçoit une `LivreIndisponibleException`. Le test passe au vert : 1 emprunt, 1 refus, stock 0.
+Je n'ai pas retenu la contrainte `CHECK (exemplaires_disponibles >= 0)` seule : elle ne prévient pas la course, elle la détecte après coup et renvoie une erreur technique. Elle reste utile en complément (défense en profondeur).
+
+## Bonus 2 : XSS dans la recherche
+
+**Exploit** : avec `Résultats pour : ${param.q}`, la recherche `<script>alert('XSS pwned')</script>` est exécutée par le navigateur (XSS réfléchi).
+**Correction** : `<c:out value="${param.q}"/>` échappe `<`, `>`, `&`, `'` et `"` : le texte est affiché, pas exécuté.
+**Réflexion** : toutes les autres vues (liste, détail, formulaire avec ses attributs `value`, emprunts, messages) utilisaient déjà `<c:out>` ; un titre de livre piégé (XSS stocké) s'affiche donc comme du texte. Les seules expressions EL non échappées contiennent des valeurs fixées par le serveur (classes CSS, id numériques).
+
