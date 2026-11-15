@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
@@ -109,13 +110,20 @@ public class LivreServlet extends HttpServlet {
 
     // ======================= ACTIONS =======================
 
-    /** GET /livres : liste de tous les livres. */
+    /** GET /livres (?q=texte) : liste des livres, filtrée par titre si une recherche est saisie. */
     private void afficherListe(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
-        req.setAttribute("livres", livreDAO.findAll());
+        List<Livre> livres = livreDAO.findAll();
+        String q = req.getParameter("q");
+        if (q != null && !q.isBlank()) {
+            String recherche = q.strip().toLowerCase(Locale.ROOT);
+            livres = livres.stream()
+                    .filter(l -> l.titre().toLowerCase(Locale.ROOT).contains(recherche))
+                    .toList();
+        }
+        req.setAttribute("livres", livres);
         req.getRequestDispatcher(VUE_LISTE).forward(req, resp);
     }
-
     /** GET /livres/{id} : fiche détaillée d'un livre (404 s'il n'existe pas). */
     private void afficherDetail(Long id, HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {

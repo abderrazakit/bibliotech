@@ -25,10 +25,22 @@
 <h1>BiblioTech - Catalogue</h1>
 
 <p><a class="btn" href="<c:url value='/livres/nouveau'/>">+ Ajouter un livre</a></p>
+<%-- Recherche par titre (Bonus 2) --%>
+<form method="get" action="<c:url value='/livres'/>">
+    <label for="q">Rechercher un titre :</label>
+    <input type="text" id="q" name="q" value="<c:out value='${param.q}'/>">
+    <button type="submit">Rechercher</button>
+    <c:if test="${not empty param.q}">
+        <a href="<c:url value='/livres'/>">Effacer</a>
+    </c:if>
+</form>
+
+    <%-- Bonus 2, étape 2 : valeur échappée par <c:out> (escapeXml="true" par défaut) --%>
+    <p>Résultats pour : <c:out value="${param.q}"/></p>
 
 <c:choose>
     <c:when test="${empty livres}">
-        <p>Aucun livre dans le catalogue.</p>
+                <p><c:out value="${empty param.q ? 'Aucun livre dans le catalogue.' : 'Aucun livre ne correspond à cette recherche.'}"/></p>
     </c:when>
     <c:otherwise>
         <p><c:out value="${fn:length(livres)}"/> livre(s) dans le catalogue.</p>
