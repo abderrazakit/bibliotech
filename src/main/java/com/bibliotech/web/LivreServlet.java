@@ -1,7 +1,8 @@
 package com.bibliotech.web;
 
 import com.bibliotech.dao.GenericDAO;
-import com.bibliotech.dao.LivreDAOMemoire;
+import com.bibliotech.dao.DAOException;
+import com.bibliotech.dao.LivreDAO;
 import com.bibliotech.model.Livre;
 import com.bibliotech.model.ValidationException;
 import jakarta.servlet.ServletException;
@@ -42,7 +43,7 @@ public class LivreServlet extends HttpServlet {
     @Override
     public void init() {
         // Partie B : implémentation en mémoire. Partie C : new LivreDAO() (JDBC).
-        livreDAO = new LivreDAOMemoire();
+        livreDAO = new LivreDAO();   // Partie C : persistance PostgreSQL (JDBC)
     }
 
     // ======================= ROUTAGE GET =======================
@@ -178,7 +179,14 @@ public class LivreServlet extends HttpServlet {
     /** POST /livres/{id}/delete : suppression, puis Post-Redirect-Get. */
     private void supprimerLivre(Long id, HttpServletRequest req, HttpServletResponse resp)
             throws IOException {
-        livreDAO.delete(id);   // sans effet si le livre n'existe plus (double clic, autre onglet…)
+        try {
+            livreDAO.delete(id);   // sans effet si le livre n'existe plus
+        } catch (DAOException e) {
+            // Clé étrangère : le livre a un historique d'emprunts
+            resp.sendError(HttpServletResponse.SC_CONFLICT,
+                    "Impossible de supprimer ce livre : il fait l'objet d'emprunts.");
+            return;
+        }
         resp.sendRedirect(req.getContextPath() + "/livres");       // PRG : 302
     }
 
