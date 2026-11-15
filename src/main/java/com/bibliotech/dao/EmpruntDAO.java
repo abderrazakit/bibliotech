@@ -48,9 +48,9 @@ public class EmpruntDAO implements GenericDAO<Emprunt, Long> {
     private static final String SQL_DELETE =
             "DELETE FROM emprunt WHERE id = ?";
 
-    // --- Requêtes de la transaction "emprunter" (C.3) ---
+    /** FOR UPDATE (Bonus 1) : verrouille la ligne du livre jusqu'au COMMIT/ROLLBACK. */
     private static final String SQL_LIRE_DISPONIBLES =
-            "SELECT exemplaires_disponibles FROM livre WHERE id = ?";
+            "SELECT exemplaires_disponibles FROM livre WHERE id = ? FOR UPDATE";
 
     private static final String SQL_DECREMENTER_DISPONIBLES =
             "UPDATE livre SET exemplaires_disponibles = exemplaires_disponibles - 1 WHERE id = ?";
@@ -64,6 +64,13 @@ public class EmpruntDAO implements GenericDAO<Emprunt, Long> {
 
     private static final String SQL_INCREMENTER_DISPONIBLES =
             "UPDATE livre SET exemplaires_disponibles = exemplaires_disponibles + 1 WHERE id = ?";
+
+    /**
+     * TEST UNIQUEMENT (Bonus 1) : pause en millisecondes entre la vérification du stock
+     * et sa décrémentation, pour rendre la race condition reproductible.
+     * Vaut 0 en production (aucun effet). Visible uniquement dans le package (tests).
+     */
+    long pauseApresVerificationMs = 0;
 
     // ======================= CRUD (GenericDAO) =======================
 
@@ -170,6 +177,7 @@ public class EmpruntDAO implements GenericDAO<Emprunt, Long> {
                 if (disponibles <= 0) {
                     throw new LivreIndisponibleException(livreId);
                 }
+                pauseDeTest();   // Bonus 1 : élargit la fenêtre de la race condition (0 ms en production)
 
                 // Étape 2 : un exemplaire de moins
                 try (PreparedStatement ps = c.prepareStatement(SQL_DECREMENTER_DISPONIBLES)) {
@@ -250,6 +258,17 @@ public class EmpruntDAO implements GenericDAO<Emprunt, Long> {
     }
 
     // ======================= OUTILS =======================
+
+    /** Pause utilisée uniquement par le test de concurrence du Bonus 1. */
+    private void pauseDeTest() {
+        if (pauseApresVerificationMs > 0) {
+            try {
+                Thread.sleep(pauseApresVerificationMs);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
 
     /** Exécute une requête SELECT sans paramètre et convertit chaque ligne en Emprunt. */
     private List<Emprunt> lister(String sql, String messageErreur) {
