@@ -38,3 +38,19 @@ Si on ajoutait `Perdu`, le `switch` ne serait plus complet et le code ne compile
 - **`Rendu` a un champ `joursDeRetard` en plus** : le record du sujet ne stockait pas le nombre de jours, ce qui empêchait de calculer la pénalité de 0,50 €/jour.
 - **Utilisateur PostgreSQL dédié `bibliotech_app`** : l'application n'utilise pas le super-utilisateur `postgres`.
 - **Tomcat sur le port 8081** : le port 8080 était déjà pris par un autre service (`httpd.exe`).
+
+### QB.1 : Pourquoi un formulaire HTML ne fait que GET et POST ?
+La norme HTML n'autorise que `get` et `post` dans l'attribut `method` d'un formulaire. Les formulaires ont été conçus pour deux usages : **lire** une page (GET) et **envoyer** des données (POST).
+PUT et DELETE ont été envisagés pour HTML5, puis abandonnés : on ne savait pas bien comment le navigateur devait gérer leurs réponses, et ils auraient permis à n'importe quel site d'envoyer ces requêtes vers un autre site.
+On contourne la limite avec un POST vers une URL dédiée (ex. `POST /livres/3/delete`), ou avec `fetch()` en JavaScript.
+
+### QB.2 : `${livre.titre}` ou `<c:out value="${livre.titre}"/>` ?
+`${livre.titre}` écrit la valeur **telle quelle** dans le HTML. `<c:out>` **échappe** les caractères spéciaux (`<` devient `&lt;`, `>` devient `&gt;`, `"` devient `&#034;`…).
+Exemple avec le titre `<script>alert('XSS')</script>` :
+- avec `${livre.titre}`, le navigateur reçoit une vraie balise `<script>` et **exécute** le code (faille XSS) ;
+- avec `<c:out>`, il reçoit `&lt;script&gt;…` et **affiche** simplement le texte, sans l'exécuter.
+
+### QB.3 : Que se passe-t-il sans PRG ?
+L'utilisateur ajoute un livre : le serveur fait l'INSERT puis un forward vers la liste, et l'URL reste celle du POST.
+S'il appuie sur F5 (ou revient en arrière puis en avant), le navigateur propose de renvoyer le formulaire.
+S'il accepte, le même POST repart, un second INSERT est fait, et le livre apparaît **en double** dans le catalogue.
