@@ -11,24 +11,25 @@ public record Livre(long id,
 
     public static final int ANNEE_MIN = 1500;
 
-    /** Constructeur compact : validation des contraintes métier. */
+    /** Constructeur compact : collecte TOUTES les erreurs, puis lève une seule exception. */
     public Livre {
-        Validations.nonVide(titre, "titre");
-        Validations.nonVide(auteur, "auteur");
-
         int anneeCourante = Year.now().getValue();
-        Validations.exiger(anneePublication >= ANNEE_MIN && anneePublication <= anneeCourante,
-                "L'année de publication doit être comprise entre "
-                + ANNEE_MIN + " et " + anneeCourante + ".");
 
-        Validations.exiger(exemplairesTotal >= 0,
-                "Le nombre total d'exemplaires ne peut pas être négatif.");
-        Validations.exiger(exemplairesDisponibles >= 0,
-                "Le nombre d'exemplaires disponibles ne peut pas être négatif.");
-        Validations.exiger(exemplairesDisponibles <= exemplairesTotal,
-                "Les exemplaires disponibles ne peuvent pas dépasser le nombre total.");
+        new Validations()
+                .verifierNonVide(titre, "titre", "Le titre est obligatoire.")
+                .verifierNonVide(auteur, "auteur", "L'auteur est obligatoire.")
+                .verifier(anneePublication >= ANNEE_MIN && anneePublication <= anneeCourante,
+                        "anneePublication",
+                        "L'année doit être comprise entre " + ANNEE_MIN + " et " + anneeCourante + ".")
+                .verifier(exemplairesTotal >= 0, "exemplairesTotal",
+                        "Le nombre total d'exemplaires ne peut pas être négatif.")
+                .verifier(exemplairesDisponibles >= 0, "exemplairesDisponibles",
+                        "Le nombre d'exemplaires disponibles ne peut pas être négatif.")
+                .verifier(exemplairesDisponibles <= exemplairesTotal, "exemplairesDisponibles",
+                        "Les exemplaires disponibles ne peuvent pas dépasser le nombre total.")
+                .leverSiErreurs();
 
-        // Normalisation : on retire les espaces superflus au début et à la fin
+        // Normalisation (après validation : titre et auteur ne sont pas null ici)
         titre = titre.strip();
         auteur = auteur.strip();
     }

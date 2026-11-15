@@ -1,6 +1,7 @@
 package com.bibliotech.model;
 
 import static org.junit.jupiter.api.Assertions.*;
+import java.util.Set;
 
 import java.time.LocalDate;
 import java.time.Year;
@@ -85,5 +86,13 @@ class ModelValidationTest {
         LocalDate aujourdhui = LocalDate.now();
         assertThrows(IllegalArgumentException.class,
                 () -> new Emprunt(1, 1, 1, aujourdhui, aujourdhui.plusDays(14), null, null));
+    }
+    
+    @Test
+    void livreAvecPlusieursErreursLesSignaleToutes() {
+        ValidationException e = assertThrows(ValidationException.class,
+                () -> new Livre(1, "", "", 1200, 2, 3));
+        assertEquals(Set.of("titre", "auteur", "anneePublication", "exemplairesDisponibles"),
+                     e.getErreurs().keySet());
     }
 }
