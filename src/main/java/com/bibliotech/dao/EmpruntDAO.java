@@ -1,6 +1,7 @@
 package com.bibliotech.dao;
 
 import com.bibliotech.model.Emprunt;
+import com.bibliotech.model.LivreIndisponibleException;
 import com.bibliotech.model.StatutEmprunt;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -46,6 +47,13 @@ public class EmpruntDAO implements GenericDAO<Emprunt, Long> {
 
     private static final String SQL_DELETE =
             "DELETE FROM emprunt WHERE id = ?";
+
+    // --- Requêtes de la transaction "emprunter" (C.3) ---
+    private static final String SQL_LIRE_DISPONIBLES =
+            "SELECT exemplaires_disponibles FROM livre WHERE id = ?";
+
+    private static final String SQL_DECREMENTER_DISPONIBLES =
+            "UPDATE livre SET exemplaires_disponibles = exemplaires_disponibles - 1 WHERE id = ?";
 
     // ======================= CRUD (GenericDAO) =======================
 
@@ -111,6 +119,69 @@ public class EmpruntDAO implements GenericDAO<Emprunt, Long> {
     /** Emprunts non encore rendus (en cours ou en retard) — utilisé par EmpruntServlet. */
     public List<Emprunt> findEnCours() {
         return lister(SQL_FIND_EN_COURS, "Impossible de lister les emprunts en cours");
+    }
+
+    // ======================= TRANSACTION (C.3) =======================
+
+    /**
+     * Enregistre un emprunt dans UNE SEULE transaction :
+     *  1. vérifie que le livre existe et qu'il reste au moins un exemplaire,
+     *  2. décrémente exemplaires_disponibles,
+     *  3. insère l'emprunt (statut EnCours).
+     * En cas d'échec à n'importe quelle étape : ROLLBACK, la base reste inchangée.
+     *
+     * @throws LivreIndisponibleException si plus aucun exemplaire n'est disponible
+     * @throws IllegalArgumentException   si le livre n'existe pas ou si la durée est invalide
+     * @throws DAOException               en cas d'erreur SQL (ex. étudiant inexistant)
+     */
+    public void enregistrerEmprunt(long livreId, long etudiantId, int dureeJours) {
+        if (dureeJours <= 0) {
+            throw new IllegalArgumentException("La durée de l'emprunt doit être positive.");
+        }
+        LocalDate aujourdhui = LocalDate.now();
+        LocalDate dateLimite = aujourdhui.plusDays(dureeJours);
+        Emprunt emprunt = new Emprunt(0, livreId, etudiantId, aujourdhui, dateLimite, null,
+                new StatutEmprunt.EnCours(dateLimite));
+
+        try (Connection c = DatabaseConnection.get()) {
+            c.setAutoCommit(false);                       // ===== DÉBUT DE LA TRANSACTION =====
+            try {
+                // Étape 1 : le livre existe-t-il, et reste-t-il un exemplaire ?
+                int disponibles;
+                try (PreparedStatement ps = c.prepareStatement(SQL_LIRE_DISPONIBLES)) {
+                    ps.setLong(1, livreId);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (!rs.next()) {
+                            throw new IllegalArgumentException("Le livre " + livreId + " n'existe pas.");
+                        }
+                        disponibles = rs.getInt("exemplaires_disponibles");
+                    }
+                }
+                if (disponibles <= 0) {
+                    throw new LivreIndisponibleException(livreId);
+                }
+
+                // Étape 2 : un exemplaire de moins
+                try (PreparedStatement ps = c.prepareStatement(SQL_DECREMENTER_DISPONIBLES)) {
+                    ps.setLong(1, livreId);
+                    ps.executeUpdate();
+                }
+
+                // Étape 3 : création de l'emprunt
+                try (PreparedStatement ps = c.prepareStatement(SQL_INSERT)) {
+                    remplirParametres(ps, emprunt);
+                    ps.executeUpdate();
+                }
+
+                c.commit();                               // ===== VALIDATION : tout ou rien =====
+
+            } catch (SQLException | RuntimeException e) {
+                c.rollback();                             // ===== ANNULATION de TOUTES les étapes =====
+                throw e;
+            }
+        } catch (SQLException e) {
+            throw new DAOException("Impossible d'enregistrer l'emprunt du livre " + livreId, e);
+        }
     }
 
     // ======================= OUTILS =======================
