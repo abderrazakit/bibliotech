@@ -178,11 +178,14 @@ Je n'ai pas retenu la contrainte `CHECK (exemplaires_disponibles >= 0)` seule : 
 
 ## Réponses aux questions
 
-### Q0.1 : Pourquoi EntityManagerFactory est un singleton et EntityManager créé par requête ?
+### Q1.1 : Pourquoi EntityManagerFactory est un singleton et EntityManager créé par requête ?
 L’EntityManagerFactory est lourde à créer : au démarrage, elle lit la configuration, analyse toutes les entités, vérifie le schéma et prépare les connexions. On la crée donc une seule fois pour toute l’application, et elle peut être partagée entre les threads. L’EntityManager, lui, est léger mais pas thread-safe : il garde en mémoire les entités qu’il a chargées (son contexte de persistance). On en crée un par requête, ou par opération, et on le ferme à la fin. Partager un EntityManager entre plusieurs requêtes mélangerait les données des utilisateurs et ferait grossir sa mémoire sans fin.
 
-###Question 2.1 : pourquoi un enum Statut à la place de la sealed interface ?
+### Q2.1 : pourquoi un enum Statut à la place de la sealed interface ?
 JPA ne sait enregistrer que des entités, ou des valeurs simples (texte, nombre, date, enum). Il ne sait pas faire correspondre une hiérarchie de records à une colonne. Un record n’a pas de constructeur sans argument, ses champs sont final, et JPA a besoin des deux pour recréer l’objet. De plus, EnRetard contient un nombre de jours qui change chaque jour : le stocker n’aurait pas de sens. On stocke donc un simple enum en texte (@Enumerated(EnumType.STRING)). Ensuite, on recalcule la sealed interface du TP 1 à la lecture, avec statutMetier(). On garde ainsi le pattern matching et le calcul des pénalités, sans les mettre en base.
 
-###Question 2.2 : pourquoi tous les @ManyToOne en LAZY ?
+### Q2.2 : pourquoi tous les @ManyToOne en LAZY ?
 Par défaut, un @ManyToOne est en EAGER : charger un emprunt charge aussi, tout de suite, son livre et son étudiant. Avec une requête JPQL qui renvoie 100 emprunts, Hibernate lance alors 1 requête pour les emprunts, puis des requêtes en plus pour chaque livre et chaque étudiant. C’est le problème n+1, même quand on n’a besoin que des dates. Et ce chargement ne peut pas être désactivé au cas par cas. En LAZY, Hibernate met à la place un objet « vide » (un proxy), qu’il ne remplit que si on s’en sert. C’est nous qui choisissons, requête par requête, ce qu’on charge, avec JOIN FETCH.
+
+### Q3.1 : pourquoi findAll() n’a pas de transaction, contrairement à save() et deleteById() ?
+findAll() ne fait que lire : il ne modifie rien, donc il n’y a rien à valider ni à annuler. JPA autorise les lectures hors transaction. Hibernate exécute alors la requête en mode autocommit, comme un simple SELECT JDBC. save() et deleteById(), eux, modifient la base. Or JPA n’écrit rien en base sans transaction : un persist ou un remove sans transaction n’est jamais envoyé, ou provoque une erreur. La différence est donc correcte pour une lecture simple. Elle a cependant deux limites. D’abord, plusieurs lectures successives ne voient pas forcément un état cohérent de la base. Ensuite, les relations LAZY ne peuvent plus être chargées après la fermeture de l’EntityManager. Quand on a besoin de cohérence entre plusieurs lectures, on les regroupe dans une même transaction, même en lecture seule.
