@@ -124,6 +124,7 @@ public class LivreServlet extends HttpServlet {
         req.setAttribute("livres", livres);
         req.getRequestDispatcher(VUE_LISTE).forward(req, resp);
     }
+    
     /** GET /livres/{id} : fiche détaillée d'un livre (404 s'il n'existe pas). */
     private void afficherDetail(Long id, HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
