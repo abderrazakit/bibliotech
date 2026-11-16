@@ -189,3 +189,47 @@ Par défaut, un @ManyToOne est en EAGER : charger un emprunt charge aussi, tout 
 
 ### Q3.1 : pourquoi findAll() n’a pas de transaction, contrairement à save() et deleteById() ?
 findAll() ne fait que lire : il ne modifie rien, donc il n’y a rien à valider ni à annuler. JPA autorise les lectures hors transaction. Hibernate exécute alors la requête en mode autocommit, comme un simple SELECT JDBC. save() et deleteById(), eux, modifient la base. Or JPA n’écrit rien en base sans transaction : un persist ou un remove sans transaction n’est jamais envoyé, ou provoque une erreur. La différence est donc correcte pour une lecture simple. Elle a cependant deux limites. D’abord, plusieurs lectures successives ne voient pas forcément un état cohérent de la base. Ensuite, les relations LAZY ne peuvent plus être chargées après la fermeture de l’EntityManager. Quand on a besoin de cohérence entre plusieurs lectures, on les regroupe dans une même transaction, même en lecture seule.
+
+### Q4.1 : pourquoi ne pas appeler livreRepository.save() puis empruntRepository.save() séparément ?
+Chaque save() ouvre et valide sa propre transaction. Imaginons ce scénario : le premier save() décrémente le stock et il est validé en base. Puis le second échoue, par exemple parce que l’étudiant n’existe pas, que la base coupe la connexion ou que Tomcat s’arrête. Le stock a alors baissé de 1 alors qu’aucun emprunt n’existe : un exemplaire est « perdu » pour toujours. Il faut que les deux écritures soient dans la même transaction, pour être validées ensemble ou annulées ensemble. Seul le service connaît cette règle, c’est donc lui qui ouvre la transaction.
+
+### Q4.2 : que se passe-t-il si LivreIndisponibleException est levée après le décrément ?
+Tx.inTransaction attrape l’exception, fait un rollback(), puis la relance. Rien n’est enregistré : ni la baisse du stock, ni l’emprunt. En JPA, setExemplairesDisponibles(...) ne modifie d’ailleurs que l’objet Java en mémoire. L’UPDATE n’est envoyé qu’au flush ou au commit, et le rollback efface tout. Au TP 1 en JDBC, l’UPDATE partait tout de suite en base, et c’est notre catch qui appelait rollback() à la main. Si on l’oubliait, le stock restait faux. Ici, ce code est écrit une seule fois dans Tx, et aucun service ne peut l’oublier.
+
+### Q4.3 : pourquoi ne pas mettre @Transactional sur une servlet ?
+D’abord, sur Tomcat nu l’annotation ne ferait rien du tout : il n’y a ni CDI ni gestionnaire de transactions pour la lire. Ensuite, même sur un serveur complet, ce serait une mauvaise conception :
+
+S (responsabilité unique) : la servlet gérerait le HTTP et en plus la base de données ;
+D (inversion des dépendances) : la couche présentation dépendrait d’un détail de la persistance ;
+O (ouvert/fermé) : ajouter une API REST ou un traitement de nuit obligerait à recopier la logique transactionnelle.
+
+En plus, la transaction resterait ouverte pendant tout le rendu de la JSP, et garderait des verrous en base trop longtemps.
+
+### Q5.1 : passer de Tomcat + Tx.inTransaction à WildFly + @Transactional, combien de fichiers à modifier ?
+Très peu, et tous au même endroit :
+
+- les services du package service : on remplace Tx.inTransaction(em -> ...) par @Transactional et un EntityManager injecté ;
+- le package persistence : JpaUtil et Tx disparaissent, et persistence.xml passe en JTA avec une datasource du serveur ;
+- éventuellement les repositories, s’ils reçoivent l’EntityManager injecté au lieu de l’ouvrir eux-mêmes.
+
+Les servlets, les JSP et les entités ne changent pas d’une ligne. C’est la preuve que la séparation en couches marche : un changement technique ne touche que la couche qui en est responsable.
+
+## Logs Hibernate : l'emprunt dans une seule transaction
+
+Log obtenu avec `hibernate.show_sql=true` en cliquant sur « Emprunter » :
+
+(coller ici les 4 premières requêtes : select livre for no key update,
+select etudiant, insert emprunt, update livre)
+
+- `for no key update` : verrou posé par `LockModeType.PESSIMISTIC_WRITE`.
+  Un second emprunt simultané du même livre attend la fin de la transaction
+  (correction de la race condition du TP 1, sans SQL écrit à la main).
+- L'INSERT part avant l'UPDATE : avec `GenerationType.IDENTITY`, Hibernate doit
+  insérer tout de suite pour récupérer l'id généré par PostgreSQL. L'UPDATE du
+  stock est envoyé au flush (dirty checking : aucun appel à save()).
+- Les deux écritures sont faites dans le même `Tx.inTransaction(...)` de
+  `EmpruntService.enregistrerEmprunt` : elles sont validées ensemble au commit,
+  ou annulées ensemble en cas d'erreur.
+
+Après la redirection (PRG), la page /emprunts ne lance que 3 requêtes
+(emprunts avec JOIN FETCH, livres, étudiants), quel que soit le nombre d'emprunts.
