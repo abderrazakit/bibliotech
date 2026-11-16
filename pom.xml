@@ -47,6 +47,37 @@
       <artifactId>jakarta.servlet.jsp.jstl</artifactId>
       <version>3.0.1</version>
     </dependency>
+	    <!-- ===== TP2 : JPA / Hibernate ===== -->
+	<!-- Tomcat ne fournit pas ces API : pas de scope provided, elles vont dans le WAR -->
+	<dependency>
+	    <groupId>jakarta.persistence</groupId>
+	    <artifactId>jakarta.persistence-api</artifactId>
+	    <version>3.1.0</version>
+	</dependency>
+	<dependency>
+	    <groupId>jakarta.transaction</groupId>
+	    <artifactId>jakarta.transaction-api</artifactId>
+	    <version>2.0.1</version>
+	</dependency>
+	<dependency>
+	    <groupId>jakarta.validation</groupId>
+	    <artifactId>jakarta.validation-api</artifactId>
+	    <version>3.0.2</version>
+	</dependency>
+	
+	<!-- Implémentation Hibernate ORM 6 -->
+	<dependency>
+	    <groupId>org.hibernate.orm</groupId>
+	    <artifactId>hibernate-core</artifactId>
+	    <version>6.5.2.Final</version>
+	</dependency>
+	
+	<!-- Bean Validation : Hibernate Validator -->
+	<dependency>
+	    <groupId>org.hibernate.validator</groupId>
+	    <artifactId>hibernate-validator</artifactId>
+	    <version>8.0.1.Final</version>
+	</dependency>
   </dependencies>
   
 
