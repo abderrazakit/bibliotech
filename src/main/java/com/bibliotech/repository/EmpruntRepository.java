@@ -78,6 +78,16 @@ public class EmpruntRepository implements JpaRepository<Emprunt, Long> {
                      .getResultList();
         }
     }
+    
+    /** Nombre d'emprunts (passés ou en cours) d'un livre. */
+    public long compterPourLivre(Long livreId) {
+        try (var em = JpaUtil.newEntityManager()) {
+            return em.createQuery(
+                    "SELECT COUNT(e) FROM Emprunt e WHERE e.livre.id = :livreId", Long.class)
+                     .setParameter("livreId", livreId)
+                     .getSingleResult();
+        }
+    }
 
     /** Emprunts en retard : date prévue dépassée et livre pas encore rendu. */
     public List<Emprunt> findEnRetard() {
