@@ -1,6 +1,7 @@
 package com.bibliotech.service;
 
 import com.bibliotech.model.Livre;
+import com.bibliotech.model.LivreAvecEmprunts;
 import com.bibliotech.persistence.Tx;
 import com.bibliotech.repository.EmpruntRepository;
 import com.bibliotech.repository.LivreRepository;
@@ -35,8 +36,18 @@ public class LivreService {
         return livreRepository.rechercher(motCle.strip());
     }
 
+    /** Exercice 7.2 : catalogue + nombre d'emprunts en cours de chaque livre, en 1 seule requête. */
+    public List<LivreAvecEmprunts> listerAvecEmpruntsEnCours(String motCle) {
+        return livreRepository.findAllAvecEmpruntsEnCours(motCle);
+    }
+
     public Optional<Livre> chercher(Long id) {
         return livreRepository.findById(id);
+    }
+
+    /** Exercice 7.1 : livre avec ses emprunts déjà chargés (JOIN FETCH). */
+    public Optional<Livre> chercherAvecEmprunts(Long id) {
+        return livreRepository.findByIdAvecEmprunts(id);
     }
 
     /** Création : règle métier, un nouveau livre a tous ses exemplaires disponibles. */
@@ -66,6 +77,7 @@ public class LivreService {
             return livre;
         });
     }
+
     /** Valide sans enregistrer (utilisé pour afficher toutes les erreurs du formulaire). */
     public void verifier(Livre livre) {
         Validateur.valider(livre);
@@ -77,9 +89,5 @@ public class LivreService {
             throw new IllegalStateException("Impossible de supprimer ce livre : il fait l'objet d'emprunts.");
         }
         livreRepository.deleteById(id);
-    }
-    /** Livre avec ses emprunts déjà chargés (JOIN FETCH). */
-    public Optional<Livre> chercherAvecEmprunts(Long id) {
-        return livreRepository.findByIdAvecEmprunts(id);
     }
 }

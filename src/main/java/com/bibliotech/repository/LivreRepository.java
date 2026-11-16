@@ -1,6 +1,7 @@
 package com.bibliotech.repository;
 
 import com.bibliotech.model.Livre;
+import com.bibliotech.model.LivreAvecEmprunts;
 import com.bibliotech.persistence.JpaUtil;
 import com.bibliotech.persistence.Tx;
 
@@ -57,8 +58,9 @@ public class LivreRepository implements JpaRepository<Livre, Long> {
                      .setParameter("q", motCle)
                      .getResultList();
         }
-    }    
-    /** Livre AVEC sa collection d'emprunts chargée (correction de la LazyInitializationException). */
+    }
+
+    /** Exercice 7.1 : livre AVEC sa collection d'emprunts chargée (JOIN FETCH). */
     public Optional<Livre> findByIdAvecEmprunts(Long id) {
         try (var em = JpaUtil.newEntityManager()) {
             return em.createQuery("""
@@ -69,6 +71,39 @@ public class LivreRepository implements JpaRepository<Livre, Long> {
                      .setParameter("id", id)
                      .getResultStream()
                      .findFirst();
+        }
+    }
+
+    /**
+     * Exercice 7.2, correction du n+1 : UNE seule requête pour tous les livres
+     * ET leur nombre d'emprunts en cours. Le comptage est fait par la base
+     * (COUNT + GROUP BY), aucun emprunt n'est chargé en mémoire.
+     * motCle facultatif (null ou vide = tout le catalogue).
+     */
+    public List<LivreAvecEmprunts> findAllAvecEmpruntsEnCours(String motCle) {
+        boolean filtre = motCle != null && !motCle.isBlank();
+
+        String jpql = """
+                SELECT new com.bibliotech.model.LivreAvecEmprunts(l, COUNT(e))
+                  FROM Livre l
+                  LEFT JOIN l.emprunts e ON e.dateRetourEffective IS NULL
+                """
+                + (filtre ? """
+                 WHERE LOWER(l.titre)  LIKE LOWER(CONCAT('%', :q, '%'))
+                    OR LOWER(l.auteur) LIKE LOWER(CONCAT('%', :q, '%'))
+                """ : "")
+                + """
+                 GROUP BY l.id, l.titre, l.auteur, l.anneePublication,
+                          l.exemplairesTotal, l.exemplairesDisponibles
+                 ORDER BY l.titre
+                """;
+
+        try (var em = JpaUtil.newEntityManager()) {
+            var requete = em.createQuery(jpql, LivreAvecEmprunts.class);
+            if (filtre) {
+                requete.setParameter("q", motCle.strip());
+            }
+            return requete.getResultList();
         }
     }
 }

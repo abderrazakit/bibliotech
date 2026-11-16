@@ -54,11 +54,14 @@
                         <th scope="col">Auteur</th>
                         <th scope="col">Année</th>
                         <th scope="col">Disponibles</th>
+                        <th scope="col">En cours</th>
                         <th scope="col">Actions</th>
                     </tr>
                     </thead>
                     <tbody>
-                    <c:forEach var="livre" items="${livres}">
+                    <%-- ligne = LivreAvecEmprunts (résultat de la requête GROUP BY) --%>
+                    <c:forEach var="ligne" items="${livres}">
+                        <c:set var="livre" value="${ligne.livre}"/>
                         <tr>
                             <td class="titre"><c:out value="${livre.titre}"/></td>
                             <td><c:out value="${livre.auteur}"/></td>
@@ -68,6 +71,7 @@
                                     <c:out value="${livre.exemplairesDisponibles}"/> sur <c:out value="${livre.exemplairesTotal}"/>
                                 </span>
                             </td>
+                            <td><c:out value="${ligne.empruntsEnCours}"/> emprunt(s)</td>
                             <td class="actions">
                                 <a href="<c:url value='/livres/${livre.id}'/>">Voir</a>
                                 <a href="<c:url value='/livres/${livre.id}/edit'/>">Modifier</a>

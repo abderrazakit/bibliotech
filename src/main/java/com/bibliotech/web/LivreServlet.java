@@ -17,7 +17,7 @@ import java.util.Optional;
 
 /**
  * Contrôleur des livres : HTTP uniquement, toute la logique est dans LivreService.
- *  GET  /livres(?q=)          liste ou recherche
+ *  GET  /livres(?q=)          liste ou recherche (avec le nombre d'emprunts en cours)
  *  GET  /livres/{id}          détail
  *  GET  /livres/nouveau       formulaire de création
  *  POST /livres               création
@@ -106,9 +106,10 @@ public class LivreServlet extends HttpServlet {
 
     // ======================= ACTIONS =======================
 
+    /** GET /livres : livres + nombre d'emprunts en cours, en UNE requête (correction du n+1). */
     private void afficherListe(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
-        req.setAttribute("livres", livreService.rechercher(req.getParameter("q")));
+        req.setAttribute("livres", livreService.listerAvecEmpruntsEnCours(req.getParameter("q")));
         req.getRequestDispatcher(VUE_LISTE).forward(req, resp);
     }
 

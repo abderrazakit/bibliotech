@@ -12,6 +12,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+/** Tests des requêtes JPQL de EmpruntRepository (et de la recherche de livres). */
 class EmpruntRepositoryH2Test extends BaseDeTestH2 {
 
     private final LocalDate aujourdhui = LocalDate.now();
