@@ -57,5 +57,18 @@ public class LivreRepository implements JpaRepository<Livre, Long> {
                      .setParameter("q", motCle)
                      .getResultList();
         }
+    }    
+    /** Livre AVEC sa collection d'emprunts chargée (correction de la LazyInitializationException). */
+    public Optional<Livre> findByIdAvecEmprunts(Long id) {
+        try (var em = JpaUtil.newEntityManager()) {
+            return em.createQuery("""
+                    SELECT l FROM Livre l
+                      LEFT JOIN FETCH l.emprunts
+                     WHERE l.id = :id
+                    """, Livre.class)
+                     .setParameter("id", id)
+                     .getResultStream()
+                     .findFirst();
+        }
     }
 }

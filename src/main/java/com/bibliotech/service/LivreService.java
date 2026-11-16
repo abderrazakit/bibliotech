@@ -78,4 +78,8 @@ public class LivreService {
         }
         livreRepository.deleteById(id);
     }
+    /** Livre avec ses emprunts déjà chargés (JOIN FETCH). */
+    public Optional<Livre> chercherAvecEmprunts(Long id) {
+        return livreRepository.findByIdAvecEmprunts(id);
+    }
 }

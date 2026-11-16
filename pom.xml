@@ -113,19 +113,12 @@
       <version>5.0.0</version>
       <scope>test</scope>
     </dependency>
-        <!-- Byte Buddy récent : Mockito l'utilise pour créer les mocks ;
-         la version embarquée par Mockito 5.18 ne reconnaît pas le JDK 25 -->
+            <!-- Byte Buddy : utilisé par Hibernate à l'exécution (proxys LAZY) ET par Mockito.
+         Version récente imposée pour le JDK 25. Pas de scope test : il doit aller dans le WAR. -->
     <dependency>
       <groupId>net.bytebuddy</groupId>
       <artifactId>byte-buddy</artifactId>
       <version>1.18.7</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>net.bytebuddy</groupId>
-      <artifactId>byte-buddy-agent</artifactId>
-      <version>1.18.7</version>
-      <scope>test</scope>
     </dependency>
     <!-- Implémentation JSON-B : jakartaee-web-api (provided) met l'API JSON-B sur le
          classpath des tests, Hibernate essaie alors de l'utiliser au démarrage -->
