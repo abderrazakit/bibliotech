@@ -12,15 +12,15 @@ Dans le code, en revanche, il n'y a plus une seule ligne de SQL écrite à la ma
 
 ## Sommaire
 
-1. [Outils utilisés](#1-outils-utilisés)
-2. [Lancer le projet](#2-lancer-le-projet)
-3. [Comment le code est organisé](#3-comment-le-code-est-organisé)
-4. [Mes choix et les écarts avec le sujet](#4-mes-choix-et-les-écarts-avec-le-sujet)
-5. [Réponses aux questions](#5-réponses-aux-questions)
-6. [Exercice 7 : les pièges de JPA](#6-exercice-7--les-pièges-de-jpa)
-7. [Preuve par les logs : un emprunt = une transaction](#7-preuve-par-les-logs--un-emprunt--une-transaction)
-8. [Les tests](#8-les-tests)
-9. [Ce qui m'a posé problème](#9-ce-qui-ma-posé-problème)
+- Outils utilisés
+- Lancer le projet
+- Comment le code est organisé
+- Mes choix et les écarts avec le sujet
+- Réponses aux questions
+- Exercice 7 : les pièges de JPA
+- Preuve par les logs : un emprunt = une transaction
+- Les tests
+- Ce qui m'a posé problème
 
 ---
 
@@ -357,33 +357,32 @@ Après l'emprunt, la page `/emprunts` ne fait que **3 requêtes**, quel que soit
 
 ## 8. Les tests
 
-**42 tests**, tous au vert avec `mvn clean package`.
+ **42 tests**, tous au vert avec `mvn clean package`.
 
-| Classe | Nombre | Type | Ce qu'elle vérifie |
-|---|---|---|---|
-| `PenaliteCalculatorTest` | 13 | unitaire | le calcul des pénalités (repris du TP 01) |
-| `ValidationTest` | 12 | unitaire | les règles de validation des livres, étudiants et emprunts |
-| `LivreServiceTest` | 5 | unitaire (Mockito) | les règles métier sur les livres, sans base de données |
-| `EmpruntServiceH2Test` | 6 | intégration (H2) | emprunt, retour, double retour, refus, stock correct |
-| `TxTest` | 1 | intégration (H2) | une erreur annule bien toutes les modifications |
-| `RaceConditionH2Test` | 1 | intégration (H2) | deux emprunts en même temps du dernier exemplaire |
-| `EmpruntRepositoryH2Test` | 3 | intégration (H2) | les requêtes sur les emprunts et la recherche |
-| `LivreRepositoryH2Test` | 1 | intégration (H2) | la requête unique qui corrige le n+1 |
+### Tests unitaires (sans base de données)
 
- Les tests d'intégration utilisent **H2**, une base qui vit en mémoire et repart vide à chaque test. Ils ne dépendent donc ni de PostgreSQL, ni des données laissées par un autre test. C'est ce qui manquait au TP 01, où les tests cassaient dès que j'avais utilisé l'application.
+- **`PenaliteCalculatorTest`** (13 tests)
+  Le calcul des pénalités de retard, repris du TP 01 sans modification.
+- **`ValidationTest`** (12 tests)
+  Les règles de validation des livres, des étudiants et des emprunts.
+- **`LivreServiceTest`** (5 tests, avec Mockito)
+  Les règles métier sur les livres. Les repositories sont remplacés par des « faux » objets (mocks).
+
+### Tests d'intégration (avec une base H2 en mémoire)
+
+- **`EmpruntServiceH2Test`** (6 tests)
+  Emprunt, retour, double retour, refus d'emprunt, et stock toujours correct.
+- **`TxTest`** (1 test)
+  Une erreur au milieu d'une transaction annule bien toutes les modifications.
+- **`RaceConditionH2Test`** (1 test)
+  Deux étudiants empruntent en même temps le dernier exemplaire : un seul réussit.
+- **`EmpruntRepositoryH2Test`** (3 tests)
+  Les requêtes sur les emprunts (en cours, en retard) et la recherche de livres.
+- **`LivreRepositoryH2Test`** (1 test)
+  La requête unique qui corrige le problème n+1.
+
+>  **Pourquoi H2 ?** C'est une base qui vit en mémoire et repart vide à chaque test.
+> Les tests ne dépendent donc ni de PostgreSQL, ni des données laissées par un autre test.
+> C'est ce qui manquait au TP 01, où les tests cassaient dès que j'avais utilisé l'application.
 
 ---
-
-## 9. Ce qui m'a posé problème
-
-| Problème | Ce que j'ai appris |
-|---|---|
-| Les tests du TP 01 cassaient après avoir utilisé l'application | Des tests qui lisent la vraie base dépendent de son contenu. Solution : une base de test H2, vide à chaque test. |
-| L'API JPA en `provided` dans le sujet | Tomcat ne fournit pas JPA : il faut l'embarquer dans le WAR. |
-| `${env.DB_URL}` ignoré par Hibernate | Les identifiants sont passés en Java par `JpaUtil`. |
-| Erreur « No Persistence provider » | La configuration H2 des tests avait été collée à la place de celle de l'application. Chaque `persistence.xml` doit rester dans son dossier (`main` ou `test`). |
-| `ClassNotFoundException` sur Byte Buddy | En déclarant cette bibliothèque « pour les tests seulement », je l'ai retirée du WAR alors qu'Hibernate en a besoin. Il faut vérifier le contenu de `WEB-INF/lib`, pas seulement que le build passe. |
-| Mockito ne marchait pas avec le JDK 25 | Il a fallu imposer une version plus récente de Byte Buddy. |
-| Hibernate cherchait une bibliothèque JSON pendant les tests | Ajout de Yasson, uniquement pour les tests. |
-| L'application ne démarrait plus après un `mvn clean` | Eclipse avait recopié un dossier incomplet. Toujours arrêter Tomcat avant de lancer Maven. |
-| Avertissement « built-in connection pool » | Le petit gestionnaire de connexions d'Hibernate suffit pour un TP. En production, on utiliserait HikariCP. |
