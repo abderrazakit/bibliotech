@@ -78,6 +78,63 @@
 	    <artifactId>hibernate-validator</artifactId>
 	    <version>8.0.1.Final</version>
 	</dependency>
+	    <!-- ===== TP2 : tests ===== -->
+    <!-- Mockito : faux objets (mocks) pour les tests unitaires -->
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <version>5.18.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-junit-jupiter</artifactId>
+      <version>5.18.0</version>
+      <scope>test</scope>
+    </dependency>
+    <!-- AssertJ : assertThat(...) lisibles, utilisés dans le sujet -->
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <version>3.27.3</version>
+      <scope>test</scope>
+    </dependency>
+    <!-- H2 : base de données en mémoire pour les tests d'intégration -->
+    <dependency>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
+      <version>2.3.232</version>
+      <scope>test</scope>
+    </dependency>
+    <!-- Moteur EL : Hibernate valide les entités au persist ; hors de Tomcat il faut le fournir -->
+    <dependency>
+      <groupId>org.glassfish.expressly</groupId>
+      <artifactId>expressly</artifactId>
+      <version>5.0.0</version>
+      <scope>test</scope>
+    </dependency>
+        <!-- Byte Buddy récent : Mockito l'utilise pour créer les mocks ;
+         la version embarquée par Mockito 5.18 ne reconnaît pas le JDK 25 -->
+    <dependency>
+      <groupId>net.bytebuddy</groupId>
+      <artifactId>byte-buddy</artifactId>
+      <version>1.18.7</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>net.bytebuddy</groupId>
+      <artifactId>byte-buddy-agent</artifactId>
+      <version>1.18.7</version>
+      <scope>test</scope>
+    </dependency>
+    <!-- Implémentation JSON-B : jakartaee-web-api (provided) met l'API JSON-B sur le
+         classpath des tests, Hibernate essaie alors de l'utiliser au démarrage -->
+    <dependency>
+      <groupId>org.eclipse</groupId>
+      <artifactId>yasson</artifactId>
+      <version>3.0.4</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
   
 

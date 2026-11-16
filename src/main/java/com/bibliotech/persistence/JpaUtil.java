@@ -7,6 +7,7 @@ import jakarta.persistence.Persistence;
 import java.util.HashMap;
 import java.util.Map;
 
+
 /**
  * Point d'accès unique à JPA.
  * L'EntityManagerFactory est créée une seule fois (coûteuse), au premier besoin,
@@ -35,15 +36,24 @@ public final class JpaUtil {
         }
         return f;
     }
-
+    /** Propriété système qui permet aux tests de choisir une autre unité de persistance (H2). */
+    public static final String PROPRIETE_UNITE = "bibliotech.persistenceUnit";
+    
     private static EntityManagerFactory creerFactory() {
-        // Hibernate ne lit pas ${env.X} dans persistence.xml :
-        // on passe les identifiants ici, depuis les variables d'environnement.
+        String unite = System.getProperty(PROPRIETE_UNITE, "bibliotechPU");
+
+        // Tests : unité "bibliotechTestPU" (H2), entièrement configurée dans son persistence.xml
+        if (!unite.equals("bibliotechPU")) {
+            return Persistence.createEntityManagerFactory(unite);
+        }
+
+        // Application : PostgreSQL. Hibernate ne lit pas ${env.X} dans persistence.xml,
+        // on passe donc les identifiants ici, depuis les variables d'environnement.
         Map<String, String> props = new HashMap<>();
         props.put("jakarta.persistence.jdbc.url",      exiger("DB_URL"));
         props.put("jakarta.persistence.jdbc.user",     exiger("DB_USER"));
         props.put("jakarta.persistence.jdbc.password", exiger("DB_PASSWORD"));
-        return Persistence.createEntityManagerFactory("bibliotechPU", props);
+        return Persistence.createEntityManagerFactory(unite, props);
     }
 
     private static String exiger(String nom) {
