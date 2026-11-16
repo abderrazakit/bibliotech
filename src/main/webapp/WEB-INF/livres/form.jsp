@@ -63,6 +63,8 @@
                     </c:if>
                 </div>
 
+                <%-- Seulement en modification : à la création, disponibles = total (règle du LivreService) --%>
+                <c:if test="${modeEdition}">
                 <div class="champ">
                     <label for="exemplairesDisponibles">Exemplaires disponibles</label>
                     <input type="text" id="exemplairesDisponibles" name="exemplairesDisponibles" inputmode="numeric"
@@ -72,6 +74,7 @@
                         <span class="erreur-champ"><c:out value="${errors.exemplairesDisponibles}"/></span>
                     </c:if>
                 </div>
+                </c:if>
             </div>
 
             <div class="barre-actions">

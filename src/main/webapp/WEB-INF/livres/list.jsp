@@ -19,8 +19,8 @@
             <p>Consultez les livres et leurs exemplaires disponibles, ajoutez-en de nouveaux ou mettez à jour le fonds.</p>
 
             <form class="recherche" method="get" action="<c:url value='/livres'/>" role="search">
-                <label for="q" class="sr">Rechercher un titre</label>
-                <input type="text" id="q" name="q" placeholder="Rechercher un titre"
+                <label for="q" class="sr">Rechercher un titre ou un auteur</label>
+                <input type="text" id="q" name="q" placeholder="Rechercher un titre ou un auteur"
                        value="<c:out value='${param.q}'/>">
                 <button type="submit" class="btn btn-discret">Rechercher</button>
             </form>
@@ -41,7 +41,7 @@
     <c:choose>
         <c:when test="${empty livres}">
             <div class="table-cadre vide-etat">
-                <p><c:out value="${empty param.q ? 'Le catalogue est vide. Ajoutez un premier livre pour commencer.' : 'Aucun titre ne correspond à cette recherche.'}"/></p>
+                <p><c:out value="${empty param.q ? 'Le catalogue est vide. Ajoutez un premier livre pour commencer.' : 'Aucun livre ne correspond à cette recherche.'}"/></p>
             </div>
         </c:when>
         <c:otherwise>
@@ -60,19 +60,19 @@
                     <tbody>
                     <c:forEach var="livre" items="${livres}">
                         <tr>
-                            <td class="titre"><c:out value="${livre.titre()}"/></td>
-                            <td><c:out value="${livre.auteur()}"/></td>
-                            <td><c:out value="${livre.anneePublication()}"/></td>
+                            <td class="titre"><c:out value="${livre.titre}"/></td>
+                            <td><c:out value="${livre.auteur}"/></td>
+                            <td><c:out value="${livre.anneePublication}"/></td>
                             <td>
-                                <span class="pastille ${livre.exemplairesDisponibles() > 0 ? 'ok' : 'vide'}">
-                                    <c:out value="${livre.exemplairesDisponibles()}"/> sur <c:out value="${livre.exemplairesTotal()}"/>
+                                <span class="pastille ${livre.exemplairesDisponibles > 0 ? 'ok' : 'vide'}">
+                                    <c:out value="${livre.exemplairesDisponibles}"/> sur <c:out value="${livre.exemplairesTotal}"/>
                                 </span>
                             </td>
                             <td class="actions">
-                                <a href="<c:url value='/livres/${livre.id()}'/>">Voir</a>
-                                <a href="<c:url value='/livres/${livre.id()}/edit'/>">Modifier</a>
+                                <a href="<c:url value='/livres/${livre.id}'/>">Voir</a>
+                                <a href="<c:url value='/livres/${livre.id}/edit'/>">Modifier</a>
                                 <form class="inline" method="post"
-                                      action="<c:url value='/livres/${livre.id()}/delete'/>"
+                                      action="<c:url value='/livres/${livre.id}/delete'/>"
                                       onsubmit="return confirm('Supprimer ce livre ?');">
                                     <button type="submit" class="lien-danger">Supprimer</button>
                                 </form>

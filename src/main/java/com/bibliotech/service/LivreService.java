@@ -66,6 +66,10 @@ public class LivreService {
             return livre;
         });
     }
+    /** Valide sans enregistrer (utilisé pour afficher toutes les erreurs du formulaire). */
+    public void verifier(Livre livre) {
+        Validateur.valider(livre);
+    }
 
     /** Suppression refusée si le livre a un historique d'emprunts (comme au TP 1). */
     public void supprimer(Long id) {

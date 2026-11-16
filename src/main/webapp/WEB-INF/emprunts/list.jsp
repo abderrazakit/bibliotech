@@ -24,9 +24,10 @@
             <label for="livreId">Livre</label>
             <select id="livreId" name="livreId">
                 <option value="">Choisir un livre</option>
+                <%-- livre = entité JPA : getters, donc pas de parenthèses --%>
                 <c:forEach var="livre" items="${livresDisponibles}">
-                    <option value="<c:out value='${livre.id()}'/>">
-                        <c:out value="${livre.titre()}"/> (<c:out value="${livre.exemplairesDisponibles()}"/> disponible(s))
+                    <option value="<c:out value='${livre.id}'/>">
+                        <c:out value="${livre.titre}"/> (<c:out value="${livre.exemplairesDisponibles}"/> disponible(s))
                     </option>
                 </c:forEach>
             </select>
@@ -36,8 +37,8 @@
             <select id="etudiantId" name="etudiantId">
                 <option value="">Choisir un étudiant</option>
                 <c:forEach var="etudiant" items="${etudiants}">
-                    <option value="<c:out value='${etudiant.id()}'/>">
-                        <c:out value="${etudiant.prenom()}"/> <c:out value="${etudiant.nom()}"/> (<c:out value="${etudiant.numeroEtudiant()}"/>)
+                    <option value="<c:out value='${etudiant.id}'/>">
+                        <c:out value="${etudiant.nomComplet}"/>
                     </option>
                 </c:forEach>
             </select>
@@ -68,6 +69,7 @@
                     </tr>
                     </thead>
                     <tbody>
+                    <%-- e = LigneEmprunt, toujours un record : on garde les parenthèses --%>
                     <c:forEach var="e" items="${emprunts}">
                         <tr class="${e.enRetard() ? 'retard' : ''}">
                             <td class="titre"><c:out value="${e.titreLivre()}"/></td>

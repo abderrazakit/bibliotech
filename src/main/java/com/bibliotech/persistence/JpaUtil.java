@@ -9,14 +9,32 @@ import java.util.Map;
 
 /**
  * Point d'accès unique à JPA.
- * L'EntityManagerFactory est créée une seule fois (coûteuse),
+ * L'EntityManagerFactory est créée une seule fois (coûteuse), au premier besoin,
  * un EntityManager est créé à chaque utilisation (léger, non thread-safe).
  */
 public final class JpaUtil {
 
-    private static final EntityManagerFactory EMF = creerFactory();
+    private static volatile EntityManagerFactory emf;
 
     private JpaUtil() {}
+
+    /**
+     * Création au premier appel. Si la base est injoignable, une exception est levée
+     * et on réessaiera au prochain appel (pas d'échec définitif de la classe).
+     */
+    private static EntityManagerFactory factory() {
+        EntityManagerFactory f = emf;
+        if (f == null) {
+            synchronized (JpaUtil.class) {
+                f = emf;
+                if (f == null) {
+                    f = creerFactory();
+                    emf = f;
+                }
+            }
+        }
+        return f;
+    }
 
     private static EntityManagerFactory creerFactory() {
         // Hibernate ne lit pas ${env.X} dans persistence.xml :
@@ -37,12 +55,13 @@ public final class JpaUtil {
     }
 
     public static EntityManager newEntityManager() {
-        return EMF.createEntityManager();
+        return factory().createEntityManager();
     }
 
     public static void close() {
-        if (EMF.isOpen()) {
-            EMF.close();
+        EntityManagerFactory f = emf;
+        if (f != null && f.isOpen()) {
+            f.close();
         }
     }
 }
