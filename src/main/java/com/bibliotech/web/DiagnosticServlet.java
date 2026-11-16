@@ -4,6 +4,9 @@ import com.bibliotech.model.Livre;
 import com.bibliotech.model.LivreAvecEmprunts;
 import com.bibliotech.persistence.JpaUtil;
 import com.bibliotech.service.LivreService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import jakarta.persistence.EntityManager;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -20,11 +23,18 @@ import java.util.List;
  *  GET /diagnostic/osiv?id=2         7.1 correction 2 : Open Session In View (anti-pattern)
  *  GET /diagnostic/n-plus-1          7.2 le problème : 1 + n requêtes
  *  GET /diagnostic/n-plus-1-corrige  7.2 la correction : 1 seule requête (LEFT JOIN + GROUP BY)
+ *  GET /diagnostic/json?id=2         7.3 un Livre et ses emprunts transformés en JSON (Jackson)
  */
 @WebServlet("/diagnostic/*")
 public class DiagnosticServlet extends HttpServlet {
 
     private final LivreService livreService = new LivreService();
+
+    /** Jackson : transforme des objets Java en JSON. JavaTimeModule = gestion des LocalDate. */
+    private final ObjectMapper json = new ObjectMapper()
+            .registerModule(new JavaTimeModule())
+            .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+            .enable(SerializationFeature.INDENT_OUTPUT);
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
@@ -93,13 +103,24 @@ public class DiagnosticServlet extends HttpServlet {
                     out.println("=> 1 seule requête SQL, quel que soit le nombre de livres");
                 }
 
+                // ===================== 7.3 Le cycle bidirectionnel en JSON =====================
+
+                case "/json" -> {
+                    // Livre chargé AVEC ses emprunts ; chaque Emprunt pointe vers ce même Livre
+                    Livre livre = livreService.chercherAvecEmprunts(id).orElseThrow();
+                    out.println("Exercice 7.3 : Livre -> JSON avec Jackson");
+                    out.println();
+                    out.println(json.writeValueAsString(livre));   // Livre → emprunts → livre → emprunts → ...
+                }
+
                 default -> resp.sendError(HttpServletResponse.SC_NOT_FOUND);
             }
-        } catch (RuntimeException e) {
+        } catch (Exception | StackOverflowError e) {
             resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             out.println();
             out.println("ERREUR : " + e.getClass().getName());
-            out.println(e.getMessage());
+            String message = String.valueOf(e.getMessage());
+            out.println(message.length() > 600 ? message.substring(0, 600) + " [...]" : message);
             log("Diagnostic " + path, e);                            // trace complète dans la console
         }
     }

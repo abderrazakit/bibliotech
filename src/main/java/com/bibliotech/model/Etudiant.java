@@ -1,5 +1,6 @@
 package com.bibliotech.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -39,6 +40,8 @@ public class Etudiant {
     @Column(nullable = false, length = 255)
     private String email;
 
+    /** @JsonIgnore (exercice 7.3) : même cycle possible Etudiant → emprunts → etudiant → ... */
+    @JsonIgnore
     @OneToMany(mappedBy = "etudiant", fetch = FetchType.LAZY)
     private List<Emprunt> emprunts = new ArrayList<>();
 

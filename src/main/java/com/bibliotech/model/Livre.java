@@ -1,5 +1,6 @@
 package com.bibliotech.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Min;
@@ -46,7 +47,9 @@ public class Livre {
     /**
      * Côté inverse de la relation : la clé étrangère est dans "emprunt".
      * Pas de cascade : supprimer un livre ne doit pas effacer son historique d'emprunts.
+     * @JsonIgnore (exercice 7.3) : casse le cycle Livre → emprunts → livre → ... en JSON.
      */
+    @JsonIgnore
     @OneToMany(mappedBy = "livre", fetch = FetchType.LAZY)
     private List<Emprunt> emprunts = new ArrayList<>();
 
@@ -68,12 +71,15 @@ public class Livre {
     }
 
     // ===== Règles qui portent sur plusieurs champs (Bean Validation) =====
+    // @JsonIgnore : ce sont des règles de validation, pas des données à exposer en JSON
 
+    @JsonIgnore
     @AssertTrue(message = "L'année doit être comprise entre 1500 et l'année en cours.")
     public boolean isAnneeNonFuture() {
         return anneePublication <= Year.now().getValue();
     }
 
+    @JsonIgnore
     @AssertTrue(message = "Les exemplaires disponibles ne peuvent pas dépasser le nombre total.")
     public boolean isDisponiblesCoherents() {
         return exemplairesDisponibles <= exemplairesTotal;

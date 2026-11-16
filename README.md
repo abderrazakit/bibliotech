@@ -233,3 +233,4 @@ select etudiant, insert emprunt, update livre)
 
 Après la redirection (PRG), la page /emprunts ne lance que 3 requêtes
 (emprunts avec JOIN FETCH, livres, étudiants), quel que soit le nombre d'emprunts.
+
